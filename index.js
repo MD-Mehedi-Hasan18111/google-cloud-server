@@ -7,12 +7,15 @@ require("dotenv").config();
 
 const upload = multer({ storage: multer.memoryStorage() });
 
+// origins
+const origins = [
+  "http://localhost:3000",
+  "https://dev-reef.netlify.app",
+  "https://app.reef.lat",
+];
+
 const corsOptions = {
-  origin: [
-    "http://localhost:3000", // Your local dev
-    "https://dev-reef.netlify.app", // frontend dev URL
-    "https://app.reef.lat", // production domain
-  ],
+  origin: true,
   credentials: true,
   optionsSuccessStatus: 200,
 };

@@ -1,8 +1,9 @@
 const express = require("express");
 const cors = require("cors");
 const { google } = require("googleapis");
-const { getAllSheetsData, getAuthClientFromToken } = require("./utils");
+const { getAllSheetsData } = require("./utils");
 const multer = require("multer");
+const { Readable } = require("stream");
 require("dotenv").config();
 
 const upload = multer({ storage: multer.memoryStorage() });
@@ -63,35 +64,71 @@ app.get("/google/sheet/:id", async (req, res) => {
   }
 });
 
-// 6. Upload Excel → Convert to Google Sheet
+// Upload Excel → Convert to Google Sheet
 app.post("/google/sheet/create", upload.single("file"), async (req, res) => {
   try {
     const token = req.headers.authorization?.split(" ")[1];
+    if (!token) {
+      return res.status(401).json({ error: "Missing access token" });
+    }
+
     const authClient = new google.auth.OAuth2();
     authClient.setCredentials({ access_token: token });
 
-    if (!req.file) {
-      return res.status(400).json({ error: "No file uploaded" });
-    }
-
     const drive = google.drive({ version: "v3", auth: authClient });
 
-    // Upload Excel file and convert to Google Sheet
+    let fileName;
+    let mimeType;
+    let buffer;
+
+    if (req.file) {
+      // 📂 Case 1: Uploaded file
+      fileName = req.file.originalname.replace(/\.[^/.]+$/, "");
+      mimeType = req.file.mimetype;
+      buffer = req.file.buffer;
+    } else if (req.body.fileUrl) {
+      // 🌐 Case 2: Remote file URL
+      const fileUrl = req.body.fileUrl;
+      const response = await fetch(fileUrl);
+      if (!response.ok) throw new Error("Failed to fetch file from URL");
+      // Convert arrayBuffer -> Buffer
+      const arrayBuffer = await response.arrayBuffer();
+      buffer = Buffer.from(arrayBuffer);
+      fileName =
+        fileUrl
+          .split("/")
+          .pop()
+          ?.replace(/_[a-zA-Z0-9]{3}(?=\.[^/.]+$)/, "")
+          ?.replace(/\.[^/.]+$/, "")
+          // Remove the file extension
+          .replace(/\.[^/.]+$/, "")
+          .replace(/-/g, " ")
+          .replace(/_/g, " ") || "Untitled Sheet";
+      mimeType =
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+    } else {
+      return res.status(400).json({ error: "No file or file url provided" });
+    }
+
+    // Convert buffer → stream
+    const bufferStream = Readable.from(buffer);
+
+    // Upload & convert to Google Sheet
     const { data } = await drive.files.create({
       requestBody: {
-        name: req.file.originalname.replace(/\.[^/.]+$/, ""), // remove extension
+        name: fileName,
         mimeType: "application/vnd.google-apps.spreadsheet",
       },
       media: {
-        mimeType: req.file.mimetype,
-        body: Buffer.from(req.file.buffer),
+        mimeType,
+        body: bufferStream,
       },
-      fields: "id, webViewLink, webContentLink",
+      fields: "id, webViewLink",
     });
 
     res.json({
       id: data.id,
-      url: data.webViewLink, // Google Sheet open URL
+      url: data.webViewLink,
     });
   } catch (err) {
     console.error("Error creating sheet", err);

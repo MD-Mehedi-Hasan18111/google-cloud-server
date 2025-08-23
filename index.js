@@ -16,7 +16,7 @@ const origins = [
 ];
 
 const corsOptions = {
-  origin: 'http://localhost:3000',
+  origin: origins,
   methods: ['GET', 'POST'],
   credentials: true,
   optionsSuccessStatus: 200,

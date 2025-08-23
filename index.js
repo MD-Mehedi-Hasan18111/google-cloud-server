@@ -1,5 +1,4 @@
 const express = require("express");
-const cors = require("cors");
 const { google } = require("googleapis");
 const { getAllSheetsData, getAuthClientFromToken } = require("./utils");
 const multer = require("multer");
@@ -7,29 +6,36 @@ require("dotenv").config();
 
 const upload = multer({ storage: multer.memoryStorage() });
 
-// origins
-const origins = [
+const allowedOrigins = [
   "http://localhost:3000",
-  "http://localhost:3000/home/",
   "https://dev-reef.netlify.app",
   "https://app.reef.lat",
 ];
 
-const corsOptions = {
-  origin: origins,
-  credentials: true,
-  optionsSuccessStatus: 200,
-};
-
 const app = express();
 app.use(express.json());
 
-app.use(cors(corsOptions)); // ✅ apply CORS
-app.options("*", cors(corsOptions)); // ✅ handle preflight
+/**
+ * ✅ Custom CORS middleware (works in Vercel serverless)
+ */
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+  }
+  res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.setHeader("Access-Control-Allow-Credentials", "true");
 
-const port = process.env.PORT || 3000;
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(200);
+  }
+  next();
+});
 
-// 4. List user’s Google Sheets files
+/**
+ * 4. List user’s Google Sheets files
+ */
 app.get("/google/sheets", async (req, res) => {
   try {
     const token = req.headers.authorization?.split(" ")[1];
@@ -47,7 +53,9 @@ app.get("/google/sheets", async (req, res) => {
   }
 });
 
-// 5. List user’s Google Sheets files
+/**
+ * 5. Get all data from a specific Google Sheet
+ */
 app.get("/google/sheet/:id", async (req, res) => {
   try {
     const token = req.headers.authorization?.split(" ")[1];
@@ -61,7 +69,9 @@ app.get("/google/sheet/:id", async (req, res) => {
   }
 });
 
-// 6. Upload Excel → Convert to Google Sheet
+/**
+ * 6. Upload Excel → Convert to Google Sheet
+ */
 app.post("/google/sheet/create", upload.single("file"), async (req, res) => {
   try {
     const token = req.headers.authorization?.split(" ")[1];
@@ -73,7 +83,6 @@ app.post("/google/sheet/create", upload.single("file"), async (req, res) => {
 
     const drive = google.drive({ version: "v3", auth: authClient });
 
-    // Upload Excel file and convert to Google Sheet
     const { data } = await drive.files.create({
       requestBody: {
         name: req.file.originalname.replace(/\.[^/.]+$/, ""), // remove extension
@@ -88,7 +97,7 @@ app.post("/google/sheet/create", upload.single("file"), async (req, res) => {
 
     res.json({
       id: data.id,
-      url: data.webViewLink, // Google Sheet open URL
+      url: data.webViewLink,
     });
   } catch (err) {
     console.error("Error creating sheet", err);
@@ -96,7 +105,9 @@ app.post("/google/sheet/create", upload.single("file"), async (req, res) => {
   }
 });
 
-// 7. Get List of Emails sent to hello@reef.lat
+/**
+ * 7. Get List of Emails sent to hello@reef.lat
+ */
 app.get("/emails", async (req, res) => {
   try {
     const token = req.headers.authorization?.split(" ")[1];
@@ -104,14 +115,13 @@ app.get("/emails", async (req, res) => {
     const gmail = google.gmail({ version: "v1", auth: authClient });
 
     const response = await gmail.users.messages.list({
-      userId: "me", // "me" means the authenticated user (hello@reef.lat)
-      maxResults: 10, // change as needed
-      q: "to:hello@reef.lat", // filter emails sent TO this address
+      userId: "me",
+      maxResults: 10,
+      q: "to:hello@reef.lat",
     });
 
     const messages = response.data.messages || [];
 
-    // Fetch full details of each email
     const emailDetails = await Promise.all(
       messages.map(async (msg) => {
         const fullMessage = await gmail.users.messages.get({
@@ -136,10 +146,13 @@ app.get("/emails", async (req, res) => {
   }
 });
 
-// 8. Get Replies to an Email (Thread)
+/**
+ * 8. Get Replies to an Email (Thread)
+ */
 app.get("/emails/:id/replies", async (req, res) => {
   try {
     const { id } = req.params;
+    const token = req.headers.authorization?.split(" ")[1]; // ✅ fix: extract token
     const authClient = getAuthClientFromToken(token);
     const gmail = google.gmail({ version: "v1", auth: authClient });
 
@@ -151,7 +164,6 @@ app.get("/emails/:id/replies", async (req, res) => {
 
     const threadId = message.data.threadId;
 
-    // Fetch the whole thread
     const thread = await gmail.users.threads.get({
       userId: "me",
       id: threadId,
@@ -164,11 +176,11 @@ app.get("/emails/:id/replies", async (req, res) => {
   }
 });
 
-app.listen(port, () => console.log(`Running on http://localhost:${port}`));
-
-// Default route
+/**
+ * Default route
+ */
 app.get("/", (req, res) => {
   res.send("Google Cloud Server Running...");
 });
 
-module.exports = app;
+module.exports = app; // ✅ needed for Vercel

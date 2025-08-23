@@ -9,18 +9,19 @@ const upload = multer({ storage: multer.memoryStorage() });
 
 const corsOptions = {
   origin: [
-    'http://localhost:3000', // Your local dev
-    'https://dev-reef.netlify.app', // frontend dev URL
-    'https://app.reef.lat' // production domain
+    "http://localhost:3000", // Your local dev
+    "https://dev-reef.netlify.app", // frontend dev URL
+    "https://app.reef.lat", // production domain
   ],
   credentials: true,
-  optionsSuccessStatus: 200
+  optionsSuccessStatus: 200,
 };
-
-app.use(cors(corsOptions));
 
 const app = express();
 app.use(express.json());
+
+app.use(cors(corsOptions)); // ✅ apply CORS
+app.options("*", cors(corsOptions)); // ✅ handle preflight
 
 const port = process.env.PORT || 3000;
 

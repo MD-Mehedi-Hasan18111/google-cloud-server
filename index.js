@@ -29,69 +29,6 @@ app.options("*", cors(corsOptions)); // ✅ handle preflight
 
 const port = process.env.PORT || 3000;
 
-const oauth2Client = new google.auth.OAuth2(
-  process.env.GOOGLE_CLIENT_ID,
-  process.env.GOOGLE_CLIENT_SECRET,
-  process.env.GOOGLE_REDIRECT_URI
-);
-
-// 1. Start OAuth flow
-app.get("/google/auth", (req, res) => {
-  const scopes = [
-    // "https://www.googleapis.com/auth/drive.readonly",
-    "https://www.googleapis.com/auth/spreadsheets.readonly",
-    "https://www.googleapis.com/auth/gmail.readonly",
-  ];
-
-  const url = oauth2Client.generateAuthUrl({
-    access_type: "offline",
-    scope: scopes,
-    prompt: "consent",
-    redirect_uri: process.env.GOOGLE_REDIRECT_URI,
-  });
-
-  res.redirect(url);
-});
-
-// 2. Handle Google OAuth callback
-app.post("/google/auth/verify", async (req, res) => {
-  const { code } = req.body;
-  try {
-    const { tokens } = await oauth2Client.getToken(code);
-    res.json(tokens); // send tokens back to frontend
-  } catch (err) {
-    console.error("Error exchanging code", err);
-    res.status(500).json({ error: "Auth error" });
-  }
-});
-
-// 3. Handle Auth refresh token to generate valid access token
-app.post("/auth/refresh", async (req, res) => {
-  const { refresh_token } = req.body;
-
-  if (!refresh_token) {
-    return res.status(400).json({ error: "Missing refresh token" });
-  }
-
-  try {
-    const client = new google.auth.OAuth2(
-      process.env.GOOGLE_CLIENT_ID,
-      process.env.GOOGLE_CLIENT_SECRET,
-      process.env.GOOGLE_REDIRECT_URI
-    );
-
-    client.setCredentials({ refresh_token });
-
-    const { credentials } = await client.refreshAccessToken();
-    // credentials = { access_token, expiry_date, id_token, ... }
-
-    res.json(credentials);
-  } catch (err) {
-    console.error("Error refreshing token", err);
-    res.status(500).json({ error: "Could not refresh token" });
-  }
-});
-
 // 4. List user’s Google Sheets files
 app.get("/google/sheets", async (req, res) => {
   try {

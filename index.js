@@ -16,7 +16,7 @@ const origins = [
 ];
 
 const corsOptions = {
-  origin: origins,
+  origin: "*",
   credentials: true,
   optionsSuccessStatus: 200,
 };

@@ -10,12 +10,13 @@ const upload = multer({ storage: multer.memoryStorage() });
 // origins
 const origins = [
   "http://localhost:3000",
+  "http://localhost:3000/home/",
   "https://dev-reef.netlify.app",
   "https://app.reef.lat",
 ];
 
 const corsOptions = {
-  origin: true,
+  origin: origins,
   credentials: true,
   optionsSuccessStatus: 200,
 };

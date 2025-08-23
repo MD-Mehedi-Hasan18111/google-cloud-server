@@ -7,8 +7,19 @@ require("dotenv").config();
 
 const upload = multer({ storage: multer.memoryStorage() });
 
+const corsOptions = {
+  origin: [
+    'http://localhost:3000', // Your local dev
+    'https://dev-reef.netlify.app', // frontend dev URL
+    'https://app.reef.lat' // production domain
+  ],
+  credentials: true,
+  optionsSuccessStatus: 200
+};
+
+app.use(cors(corsOptions));
+
 const app = express();
-app.use(cors());
 app.use(express.json());
 
 const port = process.env.PORT || 3000;

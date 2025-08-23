@@ -17,6 +17,7 @@ const origins = [
 
 const corsOptions = {
   origin: origins,
+  methods: ['GET', 'POST'],
   credentials: true,
   optionsSuccessStatus: 200,
 };

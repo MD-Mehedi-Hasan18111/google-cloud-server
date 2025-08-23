@@ -211,4 +211,9 @@ app.get("/emails/:id/replies", async (req, res) => {
 
 app.listen(port, () => console.log(`Running on http://localhost:${port}`));
 
+// Default route
+app.get("/", (req, res) => {
+  res.send("Google Cloud Server Running...");
+});
+
 module.exports = app;

@@ -164,7 +164,7 @@ app.get("/emails/:id/replies", async (req, res) => {
   }
 });
 
-app.listen(port, () => console.log(`Running on http://localhost:${port}`));
+// app.listen(port, () => console.log(`Running on http://localhost:${port}`));
 
 // Default route
 app.get("/", (req, res) => {

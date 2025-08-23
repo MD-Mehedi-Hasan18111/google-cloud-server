@@ -17,7 +17,7 @@ const origins = [
 
 const corsOptions = {
   origin: origins,
-  methods: ['GET', 'POST'],
+  methods: ["GET", "POST"],
   credentials: true,
   optionsSuccessStatus: 200,
 };
@@ -26,7 +26,6 @@ const app = express();
 app.use(express.json());
 
 app.use(cors(corsOptions)); // ✅ apply CORS
-app.options("*", cors(corsOptions)); // ✅ handle preflight
 
 const port = process.env.PORT || 5000;
 
@@ -34,7 +33,8 @@ const port = process.env.PORT || 5000;
 app.get("/google/sheets", async (req, res) => {
   try {
     const token = req.headers.authorization?.split(" ")[1];
-    const authClient = getAuthClientFromToken(token);
+    const authClient = new google.auth.OAuth2();
+    authClient.setCredentials({ access_token: token });
 
     const drive = google.drive({ version: "v3", auth: authClient });
     const { data } = await drive.files.list({
@@ -52,7 +52,8 @@ app.get("/google/sheets", async (req, res) => {
 app.get("/google/sheet/:id", async (req, res) => {
   try {
     const token = req.headers.authorization?.split(" ")[1];
-    const authClient = getAuthClientFromToken(token);
+    const authClient = new google.auth.OAuth2();
+    authClient.setCredentials({ access_token: token });
 
     const allData = await getAllSheetsData(req.params.id, authClient);
     res.json(allData);
@@ -66,7 +67,8 @@ app.get("/google/sheet/:id", async (req, res) => {
 app.post("/google/sheet/create", upload.single("file"), async (req, res) => {
   try {
     const token = req.headers.authorization?.split(" ")[1];
-    const authClient = getAuthClientFromToken(token);
+    const authClient = new google.auth.OAuth2();
+    authClient.setCredentials({ access_token: token });
 
     if (!req.file) {
       return res.status(400).json({ error: "No file uploaded" });
@@ -101,7 +103,8 @@ app.post("/google/sheet/create", upload.single("file"), async (req, res) => {
 app.get("/emails", async (req, res) => {
   try {
     const token = req.headers.authorization?.split(" ")[1];
-    const authClient = getAuthClientFromToken(token);
+    const authClient = new google.auth.OAuth2();
+    authClient.setCredentials({ access_token: token });
     const gmail = google.gmail({ version: "v1", auth: authClient });
 
     const response = await gmail.users.messages.list({
@@ -141,7 +144,8 @@ app.get("/emails", async (req, res) => {
 app.get("/emails/:id/replies", async (req, res) => {
   try {
     const { id } = req.params;
-    const authClient = getAuthClientFromToken(token);
+    const authClient = new google.auth.OAuth2();
+    authClient.setCredentials({ access_token: token });
     const gmail = google.gmail({ version: "v1", auth: authClient });
 
     const message = await gmail.users.messages.get({

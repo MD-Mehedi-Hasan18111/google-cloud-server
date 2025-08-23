@@ -1,4 +1,5 @@
 const express = require("express");
+const cors = require("cors");
 const { google } = require("googleapis");
 const { getAllSheetsData, getAuthClientFromToken } = require("./utils");
 const multer = require("multer");
@@ -7,6 +8,7 @@ require("dotenv").config();
 const upload = multer({ storage: multer.memoryStorage() });
 
 const app = express();
+app.use(cors());
 app.use(express.json());
 
 const port = process.env.PORT || 3000;

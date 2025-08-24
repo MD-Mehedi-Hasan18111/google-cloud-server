@@ -253,7 +253,6 @@ async function getAllSheetsData(spreadsheetId, authClient) {
             rows: [],
             createdBy: "import",
             excelPreview: { path: responsePath },
-            isGraphical: true,
           });
 
           console.log(`Successfully uploaded ${tab} to S3: ${responsePath}`);
@@ -262,17 +261,6 @@ async function getAllSheetsData(spreadsheetId, authClient) {
             `Failed to upload graphical sheet ${tab}:`,
             uploadError.message
           );
-
-          // Fallback: create empty table instead of failing completely
-          allTables.push({
-            id: uuidv4(),
-            tableName: tab,
-            columns: [],
-            rows: [],
-            createdBy: "import",
-            isGraphical: true,
-            uploadFailed: true,
-          });
         }
 
         continue;
@@ -353,7 +341,6 @@ async function getAllSheetsData(spreadsheetId, authClient) {
         columns,
         rows: rowData,
         createdBy: "import",
-        isGraphical: false,
       });
     } catch (error) {
       console.error(`Error processing tab ${tab}:`, error.message);

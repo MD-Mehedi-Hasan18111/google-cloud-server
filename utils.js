@@ -278,14 +278,6 @@ async function getAllSheetsData(spreadsheetId, authClient) {
       const isEmpty = rows.length === 0;
 
       if (isEmpty) {
-        allTables.push({
-          id: uuidv4(),
-          tableName: tab,
-          columns: [],
-          rows: [],
-          createdBy: "import",
-          isEmpty: true,
-        });
         continue;
       }
 
@@ -324,6 +316,21 @@ async function getAllSheetsData(spreadsheetId, authClient) {
           });
           return obj;
         });
+
+        // ✅ Pad rows until reaching 1000
+        if (rowData.length < 1000) {
+          const emptyRow = {};
+          headers.forEach((header) => {
+            emptyRow[header] = "";
+          });
+
+          // Fill missing rows in one go
+          rowData = rowData.concat(
+            Array.from({ length: 1000 - rowData.length }, () => ({
+              ...emptyRow,
+            }))
+          );
+        }
       } else {
         // only headers → add blank rows
         rowData = Array.from({ length: Math.min(100, 1000) }, () => {
@@ -344,17 +351,6 @@ async function getAllSheetsData(spreadsheetId, authClient) {
       });
     } catch (error) {
       console.error(`Error processing tab ${tab}:`, error.message);
-
-      // Create a placeholder for failed tabs
-      allTables.push({
-        id: uuidv4(),
-        tableName: tab,
-        columns: [],
-        rows: [],
-        createdBy: "import",
-        error: error.message,
-        processingFailed: true,
-      });
     }
   }
 

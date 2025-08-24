@@ -39,7 +39,7 @@ app.get("/google/sheets", async (req, res) => {
 
     const drive = google.drive({ version: "v3", auth: authClient });
     const { data } = await drive.files.list({
-      q: "mimeType='application/vnd.google-apps.spreadsheet'",
+      q: "mimeType='application/vnd.google-apps.spreadsheet' and trashed=false",
       fields: "files(id, name)",
     });
     res.json(data.files);
